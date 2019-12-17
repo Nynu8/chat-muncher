@@ -379,13 +379,13 @@
             {
                 var eb = new EmbedBuilder();
                 eb.WithTitle("Commands");
-                eb.AddInlineField("!status", "Returns the current bot status.");
-                eb.AddInlineField("!kill", "Stop processing. Use this if the bot is messing up.");
-                eb.AddInlineField("!continue", "Continue processing. Use this to continue after a !kill command.");
-                eb.AddInlineField(
+                eb.AddField("!status", "Returns the current bot status.", true);
+                eb.AddField("!kill", "Stop processing. Use this if the bot is messing up.", true);
+                eb.AddField("!continue", "Continue processing. Use this to continue after a !kill command.", true);
+                eb.AddField(
                     "!wtfkill",
-                    "Will kill the bots process. Only use this if !kill doesn't work no one is around who can fix it.");
-                eb.AddInlineField("!squadreset", "Will hard reset the squad. Use if owner made a squad and is now offline");
+                    "Will kill the bots process. Only use this if !kill doesn't work no one is around who can fix it.", true);
+                eb.AddField("!squadreset", "Will hard reset the squad. Use if owner made a squad and is now offline", true);
                 discordApi.EmbedObjectAsync(settings.CommandChannel, eb.Build(), true).Forget();
             }
 
@@ -393,15 +393,15 @@
             {
                 var eb = new EmbedBuilder();
                 eb.WithTitle("Bot Status");
-                eb.AddInlineField("Status", this.AppState.ToString());
-                eb.AddInlineField("Uptime", (DateTime.Now - this.startTime).ToPrettyFormat());
+                eb.AddField("Status", this.AppState.ToString(), true);
+                eb.AddField("Uptime", (DateTime.Now - this.startTime).ToPrettyFormat(), true);
                 lock (this)
                 {
                     if (this.lastError.HasValue)
                     {
-                        eb.AddInlineField(
+                        eb.AddField(
                             "Last Error",
-                            (DateTime.Now - this.lastError.Value).ToPrettyFormat() + " ago");
+                            (DateTime.Now - this.lastError.Value).ToPrettyFormat() + " ago", true);
                     }
                 }
 
