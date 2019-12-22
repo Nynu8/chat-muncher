@@ -104,7 +104,6 @@ namespace SonataDiscordProxyBot
             InvitedSquadMembers.Clear();
             SquadMembers.Clear();
             Loot.Clear();
-            InviteEveryone = false;
             SquadActive = false;
             IsCancelled = false;
         }

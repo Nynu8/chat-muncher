@@ -159,6 +159,10 @@
                                 {
                                     squad.InviteEveryone = true;
                                 }
+                                else
+                                {
+                                    squad.InviteEveryone = false;
+                                }
 
                                 squad.SquadCreate(msg.Message.Username, onlineCharacters);
                                 ssApi.SendChatAsync("Creating new squad", MessageChannel.Team);
