@@ -228,7 +228,14 @@
                              {
                                  try
                                  {
-                                     discordApi.SendCustomMessage(customMessage.DiscordChannelID, customMessage.MessageToSend);
+                                     if(customMessage.MessageToSend.Length == 0)
+                                     {
+                                         discordApi.SendCustomMessage(customMessage.DiscordChannelID, msg.Message.Message);
+                                     }
+                                     else
+                                     {
+                                         discordApi.SendCustomMessage(customMessage.DiscordChannelID, customMessage.MessageToSend);
+                                     }
                                  }
                                  catch (Exception)
                                  {
