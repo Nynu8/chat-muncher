@@ -17,7 +17,7 @@ namespace SonataDiscordProxyBot
         private bool isOver = false;
         private int totalMessageAmount = 0;
 
-        private readonly TimeSpan interval = TimeSpan.FromMinutes(1);
+        private readonly TimeSpan interval = TimeSpan.FromSeconds(30);
         private System.Threading.CancellationToken cancellationToken;
 
         public BattleEncounter(DiscordApi.DiscordApi discordApi, string attackedSystem, ulong channelID)
@@ -63,7 +63,7 @@ namespace SonataDiscordProxyBot
 
         private void EndEncounter()
         {
-            if((DateTime.Now - this.lastNotification).TotalMinutes > 0.5)
+            if((DateTime.Now - this.lastNotification).TotalMinutes > 1)
             {
                 this.isOver = true;
                 this.SendRaport();

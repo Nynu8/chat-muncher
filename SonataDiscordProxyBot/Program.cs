@@ -250,7 +250,7 @@
 
                                  if (team == "Star Revolution X" || galaxy == "Galactic Colosseum")
                                  {
-                                     //return;
+                                     return;
                                  }
 
                                  var now = DateTime.Now;
@@ -259,7 +259,9 @@
                                  {
                                      if (attackedSystem.IsOver())
                                      {
-                                         battleEncounters.Remove(attackedSystem);
+                                         battleEncounters.Remove(attackedSystem); 
+                                         discordApi.SendCustomMessage(settings.WarMessagesChannelID, $"@here -> Galaxy **{galaxy}** is under attack by player **{player}** from team **{team}**");
+                                         encounterNotifications.Add(galaxy, DateTime.Now);
                                      }
                                      else
                                      {
@@ -278,17 +280,17 @@
                                          {
                                              battleEncounters.Add(new BattleEncounter(discordApi, galaxy, settings.WarMessagesChannelID));
                                              encounterNotifications.Remove(galaxy);
-                                             discordApi.SendCustomMessage(settings.WarMessagesChannelID, $"everyone -> Galaxy **{galaxy}** is under attack by player **{player}** from team **{team}**");
+                                             discordApi.SendCustomMessage(settings.WarMessagesChannelID, $"@everyone -> Galaxy **{galaxy}** is under attack by player **{player}** from team **{team}**");
                                          }
                                          if(timeStampInSeconds > 120)
                                          {
-                                             discordApi.SendCustomMessage(settings.WarMessagesChannelID, $"here -> Galaxy **{galaxy}** is under attack by player **{player}** from team **{team}**");
+                                             discordApi.SendCustomMessage(settings.WarMessagesChannelID, $"@here -> Galaxy **{galaxy}** is under attack by player **{player}** from team **{team}**");
                                              encounterNotifications[galaxy] = DateTime.Now;
                                          }
                                      }
                                      else
                                      {
-                                         discordApi.SendCustomMessage(settings.WarMessagesChannelID, $"here -> Galaxy **{galaxy}** is under attack by player **{player}** from team **{team}**");
+                                         discordApi.SendCustomMessage(settings.WarMessagesChannelID, $"@here -> Galaxy **{galaxy}** is under attack by player **{player}** from team **{team}**");
                                          encounterNotifications.Add(galaxy, DateTime.Now);
                                      }
                                  }
