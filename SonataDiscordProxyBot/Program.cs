@@ -51,7 +51,8 @@
         {
             this.startTime = DateTime.UtcNow;
             var settings = JsonConvert.DeserializeObject<Settings>(File.ReadAllText("config.json"));
-            var attackedHistory = new Dictionary<string, DateTime>();
+            var battleEncounters = new List<BattleEncounter>();
+            var encounterNotifications = new Dictionary<string, DateTime>();
             var onlineCharacters = new List<string>();
             var warDictionary = new Dictionary<string, WarTimer>();
 
@@ -256,31 +257,48 @@
                                      return;
                                  }
 
-                                 string message;
-                                 var now = new DateTime();
-                                 if (attackedHistory.ContainsKey(galaxy))
+                                 var now = DateTime.Now;
+                                 var attackedSystem = battleEncounters.FirstOrDefault(s => messageContent.Contains(s.attackedSystem));
+                                 if (attackedSystem != null)
                                  {
-                                     var attackDate = attackedHistory.GetValueOrDefault(team);
-                                     if (now > attackDate)
+                                     if (attackedSystem.IsOver())
                                      {
-                                         message = $"@everyone -> Galaxy **{galaxy}** is being attacked by **{player}** from team **{team}**";
+                                         battleEncounters.Remove(attackedSystem); 
+                                         discordApi.SendCustomMessage(settings.WarMessagesChannelID, $"@here -> Galaxy **{galaxy}** is under attack by player **{player}** from team **{team}**");
+                                         encounterNotifications.Add(galaxy, DateTime.Now);
                                      }
                                      else
                                      {
-                                         message = $"Galaxy **{galaxy}** is being attacked by **{player}** from team **{team}**";
+                                         attackedSystem.AddAttackingTeam(team);
+                                         attackedSystem.AddAttackingPlayer(player);
+                                         attackedSystem.UpdateLastNotification();
                                      }
-
-                                     now.AddMinutes(15);
-                                     attackedHistory[team] = now;
-                                 }
+                                 
+                                 } 
                                  else
                                  {
-                                     message = $"@everyone -> Galaxy **{galaxy}** is being attacked by **{player}** from team **{team}**";
-                                     now.AddMinutes(15);
-                                     attackedHistory.Add(galaxy, now);
+                                     if (encounterNotifications.ContainsKey(galaxy))
+                                     {
+                                         var timeStampInSeconds = (DateTime.Now - encounterNotifications.GetValueOrDefault(galaxy)).TotalSeconds;
+                                         if (timeStampInSeconds > 30 && timeStampInSeconds < 120)
+                                         {
+                                             battleEncounters.Add(new BattleEncounter(discordApi, galaxy, settings.WarMessagesChannelID));
+                                             encounterNotifications.Remove(galaxy);
+                                             discordApi.SendCustomMessage(settings.WarMessagesChannelID, $"@everyone -> Galaxy **{galaxy}** is under attack by player **{player}** from team **{team}**");
+                                         }
+                                         if(timeStampInSeconds > 120)
+                                         {
+                                             discordApi.SendCustomMessage(settings.WarMessagesChannelID, $"@here -> Galaxy **{galaxy}** is under attack by player **{player}** from team **{team}**");
+                                             encounterNotifications[galaxy] = DateTime.Now;
+                                         }
+                                     }
+                                     else
+                                     {
+                                         discordApi.SendCustomMessage(settings.WarMessagesChannelID, $"@here -> Galaxy **{galaxy}** is under attack by player **{player}** from team **{team}**");
+                                         encounterNotifications.Add(galaxy, DateTime.Now);
+                                     }
                                  }
 
-                                 discordApi.SendCustomMessage(settings.WarMessagesChannelID, message);
 
                              }
 
