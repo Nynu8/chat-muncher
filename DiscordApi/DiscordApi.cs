@@ -64,6 +64,24 @@
             await discordChannel.SendMessageAsync(message).ConfigureAwait(false);
         }
 
+        public async Task SendDMAsync(ulong channel, string message, bool bypassLock = false)
+        {
+            if (this.MessagingDisabled && !bypassLock)
+            {
+                return;
+            }
+
+            var discordChannel = this.client.DMChannels.FirstOrDefault(g => g.Id == channel);
+            if (discordChannel == null)
+            {
+                await Console.Error.WriteLineAsync($"Discord channel could not be found: {channel}")
+                             .ConfigureAwait(false);
+                return;
+            }
+
+            await discordChannel.SendMessageAsync(message).ConfigureAwait(false);
+        }
+
         public Task SendMessageAsync(ulong channel, string username, string message, bool bypassLock = false)
         {
             string now = DateTime.Now.ToString("HH:mm:ss");
@@ -112,10 +130,17 @@
         private Task MessageReceivedAsync(SocketMessage sockMsg)
         {
             var content = this.DecomposeContent(sockMsg);
+            bool isDM = false;
+            if(sockMsg.Channel is IDMChannel)
+            {
+                isDM = true;
+                Console.WriteLine("got a DM babe");
+            }
+
             var message = new Message
                           {
                               Author = new Author { Id = sockMsg.Author.Id, Name = sockMsg.Author.Username },
-                              Channel = new Channel { Id = sockMsg.Channel.Id, Name = sockMsg.Channel.Name },
+                              Channel = new Channel { Id = sockMsg.Channel.Id, Name = sockMsg.Channel.Name, IsDM = isDM },
                               Text = content
                           };
             this.messageRecievedSubject.OnNext(message);

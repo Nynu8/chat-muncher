@@ -73,42 +73,52 @@
                         return;
                     }
 
-                    if (msg.Channel.Id == settings.CommandChannel)
+                    if (msg.Channel.IsDM)
                     {
-                        this.HandleCommands(settings, discordApi, ssApi, msg.Text, squad);
-                        return;
-                    }
-
-                    if (this.AppState != EAppState.Ready)
-                    {
-                        return;
-                    }
-
-                    var channelMapping =
-                        settings.ChannelMappings.Discord.FirstOrDefault(c => c.Discord == msg.Channel.Id);
-                    if (channelMapping == null)
-                    {
-                        return;
-                    }
-
-                    try
-                    {
-                        // ssApi.SendImpersonationChatAsync(channelMapping.Game, msg.Author.Name, msg.Text);
-                        ssApi.SendChatAsync($"<{msg.Author.Name}>: {msg.Text}", (MessageChannel)Enum.Parse(typeof(MessageChannel), channelMapping.Game));
-                    }
-                    catch (Exception)
-                    {
-                        lock (this)
+                        if(msg.Author.Id == settings.AnimeBotId)
                         {
-                            this.lastError = DateTime.Now;
+                            this.HandleBotRequest(msg.Channel.Id, discordApi, msg.Text, onlineCharacters);
+                        }
+                    }
+                    else
+                    {
+                        if (msg.Channel.Id == settings.CommandChannel)
+                        {
+                            this.HandleCommands(settings, discordApi, ssApi, msg.Text, squad);
+                            return;
                         }
 
-                        discordApi.SendMessageAsync(
-                            settings.ErrorChannel,
-                            "Error: Failed to send a message. Exitting.").Forget();
+                        if (this.AppState != EAppState.Ready)
+                        {
+                            return;
+                        }
 
-                        System.Environment.Exit(-1);
-                        //this.TryGameLoginAsync(ssApi, discordApi, settings).Forget();
+                        var channelMapping =
+                            settings.ChannelMappings.Discord.FirstOrDefault(c => c.Discord == msg.Channel.Id);
+                        if (channelMapping == null)
+                        {
+                            return;
+                        }
+
+                        try
+                        {
+                            // ssApi.SendImpersonationChatAsync(channelMapping.Game, msg.Author.Name, msg.Text);
+                            ssApi.SendChatAsync($"<{msg.Author.Name}>: {msg.Text}", (MessageChannel)Enum.Parse(typeof(MessageChannel), channelMapping.Game));
+                        }
+                        catch (Exception)
+                        {
+                            lock (this)
+                            {
+                                this.lastError = DateTime.Now;
+                            }
+
+                            discordApi.SendMessageAsync(
+                                settings.ErrorChannel,
+                                "Error: Failed to send a message. Exitting.").Forget();
+
+                            System.Environment.Exit(-1);
+                            //this.TryGameLoginAsync(ssApi, discordApi, settings).Forget();
+                        }
                     }
                 });
 
@@ -435,6 +445,13 @@
                 }
 
                 discordApi.EmbedObjectAsync(settings.CommandChannel, eb.Build(), true).Forget();
+            }
+        }
+        private void HandleBotRequest(ulong channelID, DiscordApi discordApi, string requestText, List<string> onlineCharacters)
+        {
+            if (requestText.Equals("!online"))
+            {
+                discordApi.SendDMAsync(channelID, string.Join(", ", onlineCharacters)).Forget();
             }
         }
 

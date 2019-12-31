@@ -4,6 +4,8 @@
     {
         public ulong BotDiscordId { get; set; }
 
+        public ulong AnimeBotId { get; set; }
+
         public Mappings ChannelMappings { get; set; }
 
         public ulong CommandChannel { get; set; }
