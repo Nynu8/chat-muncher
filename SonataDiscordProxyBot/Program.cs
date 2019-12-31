@@ -47,14 +47,21 @@
             new Program().MainAsync().GetAwaiter().GetResult();
         }
 
+        //my junk ----------------------------------------
+        public List<string> onlineCharacters { get; set; }
+        //------------------------------------------------
+
         public async Task MainAsync()
         {
             this.startTime = DateTime.UtcNow;
             var settings = JsonConvert.DeserializeObject<Settings>(File.ReadAllText("config.json"));
             var battleEncounters = new List<BattleEncounter>();
             var encounterNotifications = new Dictionary<string, DateTime>();
-            var onlineCharacters = new List<string>();
             var warDictionary = new Dictionary<string, WarTimer>();
+            onlineCharacters = new List<string>();
+
+            var test = new SocketServer();
+            test.Start(this);
 
             var discordApi = new DiscordApi();
             await discordApi.StartAsync(settings.DiscordToken).ConfigureAwait(false);
@@ -72,53 +79,42 @@
                     {
                         return;
                     }
-
-                    if (msg.Channel.IsDM)
+                    if (msg.Channel.Id == settings.CommandChannel)
                     {
-                        if(msg.Author.Id == settings.AnimeBotId)
-                        {
-                            this.HandleBotRequest(msg.Channel.Id, discordApi, msg.Text, onlineCharacters);
-                        }
+                        this.HandleCommands(settings, discordApi, ssApi, msg.Text, squad);
+                        return;
                     }
-                    else
+
+                    if (this.AppState != EAppState.Ready)
                     {
-                        if (msg.Channel.Id == settings.CommandChannel)
+                        return;
+                    }
+
+                    var channelMapping =
+                        settings.ChannelMappings.Discord.FirstOrDefault(c => c.Discord == msg.Channel.Id);
+                    if (channelMapping == null)
+                    {
+                        return;
+                    }
+
+                    try
+                    {
+                        // ssApi.SendImpersonationChatAsync(channelMapping.Game, msg.Author.Name, msg.Text);
+                        ssApi.SendChatAsync($"<{msg.Author.Name}>: {msg.Text}", (MessageChannel)Enum.Parse(typeof(MessageChannel), channelMapping.Game));
+                    }
+                    catch (Exception)
+                    {
+                        lock (this)
                         {
-                            this.HandleCommands(settings, discordApi, ssApi, msg.Text, squad);
-                            return;
+                            this.lastError = DateTime.Now;
                         }
 
-                        if (this.AppState != EAppState.Ready)
-                        {
-                            return;
-                        }
+                        discordApi.SendMessageAsync(
+                            settings.ErrorChannel,
+                            "Error: Failed to send a message. Exitting.").Forget();
 
-                        var channelMapping =
-                            settings.ChannelMappings.Discord.FirstOrDefault(c => c.Discord == msg.Channel.Id);
-                        if (channelMapping == null)
-                        {
-                            return;
-                        }
-
-                        try
-                        {
-                            // ssApi.SendImpersonationChatAsync(channelMapping.Game, msg.Author.Name, msg.Text);
-                            ssApi.SendChatAsync($"<{msg.Author.Name}>: {msg.Text}", (MessageChannel)Enum.Parse(typeof(MessageChannel), channelMapping.Game));
-                        }
-                        catch (Exception)
-                        {
-                            lock (this)
-                            {
-                                this.lastError = DateTime.Now;
-                            }
-
-                            discordApi.SendMessageAsync(
-                                settings.ErrorChannel,
-                                "Error: Failed to send a message. Exitting.").Forget();
-
-                            System.Environment.Exit(-1);
-                            //this.TryGameLoginAsync(ssApi, discordApi, settings).Forget();
-                        }
+                        System.Environment.Exit(-1);
+                        //this.TryGameLoginAsync(ssApi, discordApi, settings).Forget();
                     }
                 });
 
@@ -238,7 +234,7 @@
                              {
                                  try
                                  {
-                                     if(customMessage.MessageToSend.Length == 0)
+                                     if (customMessage.MessageToSend.Length == 0)
                                      {
                                          discordApi.SendCustomMessage(customMessage.DiscordChannelID, msg.Message.Message);
                                      }
@@ -280,7 +276,7 @@
                                  {
                                      if (attackedSystem.IsOver())
                                      {
-                                         battleEncounters.Remove(attackedSystem); 
+                                         battleEncounters.Remove(attackedSystem);
                                          discordApi.SendCustomMessage(settings.WarMessagesChannelID, $"@here -> Galaxy **{galaxy}** is under attack by player **{player}** from team **{team}**");
                                          encounterNotifications.Add(galaxy, DateTime.Now);
                                      }
@@ -290,8 +286,8 @@
                                          attackedSystem.AddAttackingPlayer(player);
                                          attackedSystem.UpdateLastNotification();
                                      }
-                                 
-                                 } 
+
+                                 }
                                  else
                                  {
                                      if (encounterNotifications.ContainsKey(galaxy))
@@ -303,7 +299,7 @@
                                              encounterNotifications.Remove(galaxy);
                                              discordApi.SendCustomMessage(settings.WarMessagesChannelID, $"@everyone -> Galaxy **{galaxy}** is under attack by player **{player}** from team **{team}**");
                                          }
-                                         if(timeStampInSeconds > 120)
+                                         if (timeStampInSeconds > 120)
                                          {
                                              discordApi.SendCustomMessage(settings.WarMessagesChannelID, $"@here -> Galaxy **{galaxy}** is under attack by player **{player}** from team **{team}**");
                                              encounterNotifications[galaxy] = DateTime.Now;
@@ -321,7 +317,7 @@
 
                              if (messageContent.Contains("has declared war on") || messageContent.Contains("is no longer at war with"))
                              {
-                                 if(messageContent.Contains("declared war on"))
+                                 if (messageContent.Contains("declared war on"))
                                  {
                                      Regex rx = new Regex(@"Team (.*?) has declared war on (.*?)\.");
                                      MatchCollection matches = rx.Matches(messageContent);
@@ -330,9 +326,9 @@
                                      var target = matches[0].Groups[2].Value;
                                      warDictionary.Add(team, new WarTimer(discordApi, team, settings.WarMessagesChannelID));
                                      warDictionary.GetValueOrDefault(team).Notify(target);
-                                     if(team == "Eminence Front")
+                                     if (team == "Eminence Front")
                                      {
-                                         for(int i = 0; i < 10; i++)
+                                         for (int i = 0; i < 10; i++)
                                          {
                                              discordApi.SendCustomMessage(settings.WarMessagesChannelID, "@everyone -> EF WARRED US");
                                          }
@@ -474,7 +470,7 @@
 
                             this.AppState = EAppState.WaitingForLogin;
                             ssApi.TryLoginAsync(settings.GameUsername, settings.GamePassword).Wait();
-                           
+
 
                             if (!ssApi.IsConnected)
                             {
@@ -508,7 +504,7 @@
                             }
                         }
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         Console.WriteLine(e.Message);
                         Environment.Exit(-1);

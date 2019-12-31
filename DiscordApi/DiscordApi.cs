@@ -134,7 +134,6 @@
             if(sockMsg.Channel is IDMChannel)
             {
                 isDM = true;
-                Console.WriteLine("got a DM babe");
             }
 
             var message = new Message
