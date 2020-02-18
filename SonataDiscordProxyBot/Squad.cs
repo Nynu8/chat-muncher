@@ -1,6 +1,8 @@
-﻿using StarSonataApi.Objects;
+﻿using Newtonsoft.Json;
+using StarSonataApi.Objects;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -31,6 +33,23 @@ namespace SonataDiscordProxyBot
                         }
                     }
                 });
+
+            if(File.Exists(filePath))
+            {
+                var definition = new
+                {
+                    squadLeader = "",
+                    memberList = new List<string>()
+                };
+
+                using (StreamReader file = File.OpenText(filePath))
+                {
+                    var fileData = JsonConvert.DeserializeAnonymousType(file.ReadToEnd(), definition);
+                    this.SquadActive = true;
+                    this.SquadLeader = fileData.squadLeader;
+                    this.InvitedSquadMembers = fileData.memberList;
+                }
+            }
         }
 
         public string SquadLeader { get; set; }
@@ -47,16 +66,23 @@ namespace SonataDiscordProxyBot
 
         private readonly Channel<Func<Task>> SquadThread;
 
-        private readonly StarSonataApi.StarSonataApi ssApi;
+        private StarSonataApi.StarSonataApi ssApi;
 
         private AutoResetEvent resetEvent = null;
 
         private bool IsCancelled = false;
 
+        private const string filePath = @"./squad.json";
+
         public void Invite(string character)
         {
             ssApi.SendChatAsync($"/squadinvite {character}", MessageChannel.Team);
-            InvitedSquadMembers.Add(character);
+            if (!InvitedSquadMembers.Contains(character))
+            {
+                InvitedSquadMembers.Add(character);
+                SaveToFile();
+            }
+
         }
 
         public void SquadCreate(string leader, List<string> members)
@@ -90,6 +116,8 @@ namespace SonataDiscordProxyBot
                     });
                 }
             }
+
+            SaveToFile();
         }
 
         public void LeaveSquad()
@@ -106,6 +134,28 @@ namespace SonataDiscordProxyBot
             Loot.Clear();
             SquadActive = false;
             IsCancelled = false;
+            DeleteFile();
+        }
+
+        public void SetSSApi(StarSonataApi.StarSonataApi ssApi)
+        {
+            this.ssApi = ssApi;
+        }
+
+        private void SaveToFile()
+        {
+            var data = new
+            {
+                squadLeader = this.SquadLeader,
+                memberList = this.InvitedSquadMembers
+            };
+
+            File.WriteAllText(filePath, JsonConvert.SerializeObject(data));
+        }
+
+        private void DeleteFile()
+        {
+            File.Delete(filePath);
         }
 
         public bool IsLeader(string name)
