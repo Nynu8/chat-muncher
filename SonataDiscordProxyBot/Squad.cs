@@ -165,7 +165,8 @@ namespace SonataDiscordProxyBot
 
         public void LeaderJoined()
         {
-            resetEvent.Set();
+            if(resetEvent != null)
+                resetEvent.Set();
         }
 
         private Task SquadCreateTask()
