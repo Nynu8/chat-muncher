@@ -23,5 +23,11 @@
         public ulong WarMessagesChannelID { get; set; }
 
         public CustomMessages[] CustomMessages { get; set; }
+
+        public string SpreadsheetId { get; set; }
+
+        public string SpreadsheetRange { get; set; }
+
+        public ulong BaseChannelId { get; set; }
     }
 }

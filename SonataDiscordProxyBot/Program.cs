@@ -58,6 +58,7 @@
             var battleEncounters = new List<BattleEncounter>();
             var encounterNotifications = new Dictionary<string, DateTime>();
             var warDictionary = new Dictionary<string, WarTimer>();
+            var spreadsheetClient = new Spreadsheet(settings.SpreadsheetId, settings.SpreadsheetRange);
             onlineCharacters = new List<string>();
 
             var test = new SocketServer();
@@ -347,6 +348,16 @@
                                      discordApi.SendCustomMessage(settings.WarMessagesChannelID, $"@everyone -> Team **{team}** has ended the war!");
 
                                  }
+                             }
+
+                             if (messageContent.Contains("Member accounts with"))
+                             {
+                                 Regex rx = new Regex(@"Member accounts with deployed bases expiring \(or already expired\) in the next 24 hours: (.*?)$");
+                                 MatchCollection matches = rx.Matches(messageContent);
+                                 matches.ToArray();
+                                 var nicks = matches[0].Groups[1].Value;
+                                 var discordUsers = spreadsheetClient.GetDiscordCharOwners(nicks.Split(", "));
+                                 discordApi.SendCustomMessage(settings.BaseChannelId, $"{messageContent}\n{string.Join(", ", discordUsers.Select(user => $"<@{user}>").ToArray())}");
                              }
                          }
                      });
